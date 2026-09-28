@@ -29,7 +29,7 @@ try {
       const box = await globe.boundingBox();
       if (!box) throw new Error('Globe has no visible bounds');
       await page.screenshot({ path: `output/${name}-check.png` });
-      const trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 0.5);
+      let trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 0.5);
       console.log('Pin/modal elements', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('[class*="pin"], [class*="marker"], [class*="modal"]')].slice(0, 60).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, cls: String(e.className).slice(0, 100), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; }))));
       await page.mouse.move(box.x + box.width * .58, box.y + box.height * .48);
       await page.waitForTimeout(2500);
@@ -46,15 +46,18 @@ try {
         }
         if (!await next.isVisible().catch(() => false)) throw new Error('No HVAC pin modal opened');
         await page.screenshot({ path: `output/${name}-modal-check.png` });
+        trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 5);
         console.log('Modal state', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.granpai-modal-overlay, .granpai-modal-box')].map(e => { const r = e.getBoundingClientRect(); return { cls: e.className, text: e.innerText.slice(0, 100), x: r.x, y: r.y, w: r.width, h: r.height, display: getComputedStyle(e).display, opacity: getComputedStyle(e).opacity }; }))));
         await page.waitForTimeout(1800);
         await next.click();
       } else if (name === 'timeline') {
         const play = page.getByRole('button', { name: /play/i }).first();
         if (await play.isVisible().catch(() => false)) await play.click();
+        trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 3);
       } else {
         const item = page.locator('[class*="sidebar"] [class*="item"]').filter({ visible: true }).first();
         if (await item.count()) await item.click({ timeout: 3000 }).catch(() => {});
+        trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 3);
       }
       await page.waitForTimeout(7000);
       await writeFile(`output/${name}.json`, JSON.stringify({ ...cfg, demo: name, trimSeconds }, null, 2));
