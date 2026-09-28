@@ -30,11 +30,15 @@ jobs:
         env:
           DEMO: ${{ inputs.demo || 'hvac' }}
         run: npm run record
-      - name: Render music-backed vertical promo
+      - name: Render vertical video
         run: |
           for metadata in output/*.json; do
             demo="$(basename "$metadata" .json)"
-            python scripts/promo.py "$demo"
+            if [ "$demo" = hvac ]; then
+              python scripts/cinematic.py
+            else
+              python scripts/promo.py "$demo"
+            fi
           done
       - uses: actions/upload-artifact@v4
         if: always()
@@ -42,6 +46,7 @@ jobs:
           name: granpai-videos-${{ github.run_number }}
           path: |
             output/*-promo.mp4
+            output/*-cinematic.mp4
             output/*-check.png
             output/*.json
             output/*.webm
