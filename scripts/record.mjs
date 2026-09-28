@@ -45,6 +45,8 @@ try {
           if (await next.isVisible().catch(() => false)) break;
         }
         if (!await next.isVisible().catch(() => false)) throw new Error('No HVAC pin modal opened');
+        await page.screenshot({ path: `output/${name}-modal-check.png` });
+        console.log('Modal state', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('.granpai-modal-overlay, .granpai-modal-box')].map(e => { const r = e.getBoundingClientRect(); return { cls: e.className, text: e.innerText.slice(0, 100), x: r.x, y: r.y, w: r.width, h: r.height, display: getComputedStyle(e).display, opacity: getComputedStyle(e).opacity }; }))));
         await page.waitForTimeout(1800);
         await next.click();
       } else if (name === 'timeline') {
