@@ -33,11 +33,17 @@ try {
       await page.mouse.move(box.x + box.width * .58, box.y + box.height * .48);
       await page.waitForTimeout(2500);
       if (name === 'hvac') {
-        // The demo opens facing North America. Click its east-coast pin.
-        await page.mouse.click(box.x + box.width * .78, box.y + box.height * .34);
-        await page.waitForTimeout(1700);
         const next = page.getByRole('button', { name: /next/i }).first();
-        if (await next.isVisible().catch(() => false)) await next.click();
+        // Known visible pin positions for the North America camera, in viewport pixels.
+        // Try multiple branches because auto-rotation may move markers a little.
+        for (const [x, y] of [[1162, 406], [1112, 420], [1035, 448], [947, 393]]) {
+          await page.mouse.click(x, y);
+          await page.waitForTimeout(350);
+          if (await next.isVisible().catch(() => false)) break;
+        }
+        if (!await next.isVisible().catch(() => false)) throw new Error('No HVAC pin modal opened');
+        await page.waitForTimeout(1800);
+        await next.click();
       } else if (name === 'timeline') {
         const play = page.getByRole('button', { name: /play/i }).first();
         if (await play.isVisible().catch(() => false)) await play.click();
