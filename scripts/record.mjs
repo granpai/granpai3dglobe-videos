@@ -16,6 +16,7 @@ try {
     const cfg = configs[name];
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, recordVideo: { dir: 'output', size: { width: 1440, height: 900 } }, reducedMotion: 'no-preference' });
     const page = await context.newPage();
+    const videoStarted = Date.now();
     page.on('console', msg => { if (msg.type() === 'error') console.log(`[browser] ${msg.text()}`); });
     try {
       await page.goto(cfg.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -28,16 +29,12 @@ try {
       const box = await globe.boundingBox();
       if (!box) throw new Error('Globe has no visible bounds');
       await page.screenshot({ path: `output/${name}-check.png` });
+      const trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 0.5);
       await page.mouse.move(box.x + box.width * .58, box.y + box.height * .48);
       await page.waitForTimeout(2500);
       if (name === 'hvac') {
-        await page.mouse.down();
-        for (let i = 0; i < 30; i++) await page.mouse.move(box.x + box.width * (.58 - i * .004), box.y + box.height * .48, { steps: 1 });
-        await page.mouse.up();
-        await page.waitForTimeout(1800);
-        // Pins are HTML overlays in some versions; use an actual visible pin if available.
-        const pin = page.locator('.granpai-globe-wrapper [class*="pin"]').filter({ visible: true }).first();
-        if (await pin.count()) await pin.click({ timeout: 3000 }).catch(() => {});
+        // The demo opens facing North America. Click its east-coast pin.
+        await page.mouse.click(box.x + box.width * .78, box.y + box.height * .34);
         await page.waitForTimeout(1700);
         const next = page.getByRole('button', { name: /next/i }).first();
         if (await next.isVisible().catch(() => false)) await next.click();
@@ -49,7 +46,7 @@ try {
         if (await item.count()) await item.click({ timeout: 3000 }).catch(() => {});
       }
       await page.waitForTimeout(7000);
-      await writeFile(`output/${name}.json`, JSON.stringify({ ...cfg, demo: name }, null, 2));
+      await writeFile(`output/${name}.json`, JSON.stringify({ ...cfg, demo: name, trimSeconds }, null, 2));
       console.log(`Recorded ${name}; canvas ${box.width}x${box.height}`);
     } finally {
       const video = page.video();
