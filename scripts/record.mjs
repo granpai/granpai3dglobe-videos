@@ -30,15 +30,18 @@ try {
       if (!box) throw new Error('Globe has no visible bounds');
       await page.screenshot({ path: `output/${name}-check.png` });
       const trimSeconds = Math.max(0, (Date.now() - videoStarted) / 1000 - 0.5);
+      console.log('Pin/modal elements', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('[class*="pin"], [class*="marker"], [class*="modal"]')].slice(0, 60).map(e => { const r = e.getBoundingClientRect(); return { tag: e.tagName, cls: String(e.className).slice(0, 100), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; }))));
       await page.mouse.move(box.x + box.width * .58, box.y + box.height * .48);
       await page.waitForTimeout(2500);
       if (name === 'hvac') {
         const next = page.getByRole('button', { name: /next/i }).first();
+        console.log('Next visible before click', await next.isVisible().catch(() => false));
         // Known visible pin positions for the North America camera, in viewport pixels.
         // Try multiple branches because auto-rotation may move markers a little.
         for (const [x, y] of [[1162, 406], [1112, 420], [1035, 448], [947, 393]]) {
           await page.mouse.click(x, y);
           await page.waitForTimeout(350);
+          console.log('Tried pin', x, y, 'next visible', await next.isVisible().catch(() => false));
           if (await next.isVisible().catch(() => false)) break;
         }
         if (!await next.isVisible().catch(() => false)) throw new Error('No HVAC pin modal opened');
