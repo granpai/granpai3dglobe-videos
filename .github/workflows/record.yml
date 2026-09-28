@@ -1,0 +1,37 @@
+name: Record 3D Globe demo
+on:
+  workflow_dispatch:
+    inputs:
+      demo:
+        description: Demo to record
+        required: true
+        default: hvac
+        type: choice
+        options: [hvac, timeline, global-impact, all]
+  push:
+    branches: [main]
+    paths: ['scripts/**', 'package.json', 'package-lock.json', '.github/workflows/record.yml']
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Record live demo
+        env:
+          DEMO: ${{ inputs.demo || 'hvac' }}
+        run: npm run record
+      - name: Render vertical MP4
+        run: bash scripts/render.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: granpai-videos-${{ github.run_number }}
+          path: output/
+          if-no-files-found: warn
+          retention-days: 30
